@@ -151,7 +151,8 @@ const BRICK_TYPES = {
   ELITE: 2,
   BONUS_BALL: 3,      // 🎁 공 획득 보너스
   BONUS_EXPLODE: 4,   // 💥 광역 폭발 보너스
-  BONUS_LIGHTNING: 5  // ⚡ 전격 벼락 보너스
+  BONUS_LIGHTNING: 5, // ⚡ 전격 벼락 보너스
+  UNBREAKABLE: 6      // 🛡️ 파괴 불가 블록 (4wave마다 중앙 출현, 2칸)
 };
 
 const keys = {
@@ -323,7 +324,33 @@ function spawnBrickRow() {
   const baseHp = Math.floor(1 + state.wave * 1.5);
   const bonusRate = 0.15 + (state.talents.bonusBrickRate || 0) * 0.08;
 
+  const isUnbreakableWave = (state.wave % 4 === 0);
+  const centerCol = Math.floor((state.cols - 2) / 2);
+
+  if (isUnbreakableWave) {
+    state.bricks.push({
+      col: centerCol,
+      row: 0,
+      x: centerCol * cellWidth + 1.5,
+      y: 10,
+      targetY: 10,
+      w: cellWidth * 2 - 3,
+      h: cellHeight - 3,
+      r: BRICK_CORNER_RADIUS,
+      hp: Infinity,
+      maxHp: Infinity,
+      type: BRICK_TYPES.UNBREAKABLE,
+      isUnbreakable: true,
+      shape: null,
+      hitFlash: 0
+    });
+  }
+
   for (let c = 0; c < state.cols; c++) {
+    if (isUnbreakableWave && (c === centerCol || c === centerCol + 1)) {
+      continue;
+    }
+
     if (Math.random() < 0.65) {
       let type = BRICK_TYPES.NORMAL;
       let hp = baseHp;
@@ -1110,6 +1137,12 @@ function applyBallEffect(ball, hitBrick) {
 }
 
 function damageBrick(brick, dmg, isDirectHit = false) {
+  if (brick.type === BRICK_TYPES.UNBREAKABLE || brick.isUnbreakable) {
+    brick.hitFlash = 3;
+    sounds.playBounce();
+    return;
+  }
+
   brick.hp -= dmg;
   brick.hitFlash = isDirectHit ? 4 : 2;
 
@@ -1733,6 +1766,29 @@ function drawTriangleShape(ctx, x, y, w, h, shape) {
 
 function drawBricks() {
   for (let b of state.bricks) {
+    if (b.type === BRICK_TYPES.UNBREAKABLE) {
+      ctx.save();
+      const isFlashing = b.hitFlash > 0;
+      if (isFlashing) b.hitFlash--;
+
+      ctx.fillStyle = isFlashing ? '#ffffff' : '#2f3640';
+      drawRoundedRect(ctx, b.x, b.y, b.w, b.h, b.r);
+      ctx.fill();
+
+      ctx.strokeStyle = isFlashing ? '#ffffff' : '#7f8fa6';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      ctx.fillStyle = isFlashing ? '#f5cd79' : '#fbc531';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '800 13px sans-serif';
+      ctx.fillText('🛡️ UNBREAKABLE', b.x + b.w / 2, b.y + b.h / 2);
+
+      ctx.restore();
+      continue;
+    }
+
     ctx.save();
 
     let color = getBrickColor(b);
