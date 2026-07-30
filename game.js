@@ -618,7 +618,18 @@ function distanceToSegment(px, py, x1, y1, x2, y2) {
 }
 
 function checkBrickCollisionAndReflect(ball, brick) {
-  if (ball.lastHitBrick === brick) return null;
+  if (ball.lastHitBrick === brick) {
+    if (
+      ball.x + ball.r < brick.x - 2 ||
+      ball.x - ball.r > brick.x + brick.w + 2 ||
+      ball.y + ball.r < brick.y - 2 ||
+      ball.y - ball.r > brick.y + brick.h + 2
+    ) {
+      ball.lastHitBrick = null;
+    } else {
+      return null;
+    }
+  }
 
   if (
     ball.x + ball.r < brick.x ||
@@ -670,7 +681,7 @@ function checkBrickCollisionAndReflect(ball, brick) {
       if (dot >= 0) continue;
 
       const dist = distanceToSegment(ball.x, ball.y, f.p1.x, f.p1.y, f.p2.x, f.p2.y);
-      if (dist <= ball.r + 2.0 && dist < minDistance) {
+      if (dist <= ball.r + 4.0 && dist < minDistance) {
         minDistance = dist;
         bestFace = f;
       }
@@ -696,10 +707,19 @@ function checkBrickCollisionAndReflect(ball, brick) {
   const distSq = dx * dx + dy * dy;
   const targetDist = brick.r + ball.r;
 
-  if (distSq <= targetDist * targetDist && distSq > 0) {
-    const dist = Math.sqrt(distSq);
-    const nx = dx / dist;
-    const ny = dy / dist;
+  if (distSq <= (targetDist + 2.0) * (targetDist + 2.0)) {
+    let nx = 0;
+    let ny = 0;
+    if (distSq > 0) {
+      const dist = Math.sqrt(distSq);
+      nx = dx / dist;
+      ny = dy / dist;
+    } else {
+      const speed = Math.hypot(ball.vx, ball.vy) || 1;
+      nx = -ball.vx / speed;
+      ny = -ball.vy / speed;
+    }
+
     const dot = ball.vx * nx + ball.vy * ny;
     if (dot < 0) {
       return { nx: nx, ny: ny };
@@ -854,8 +874,8 @@ function updatePhysics() {
             ball.vy = ball.vy - 2 * dot * ny;
           }
 
-          ball.x += nx * 0.5;
-          ball.y += ny * 0.5;
+          ball.x += nx * (ball.r + 1.2);
+          ball.y += ny * (ball.r + 1.2);
           ball.lastHitBrick = brick;
 
           ball.bounces++;
@@ -1883,8 +1903,8 @@ function drawAimLine() {
 
         simBall.vx = simBall.vx - 2 * dot * nx;
         simBall.vy = simBall.vy - 2 * dot * ny;
-        simBall.x += nx * 0.5;
-        simBall.y += ny * 0.5;
+        simBall.x += nx * (simBall.r + 1.2);
+        simBall.y += ny * (simBall.r + 1.2);
         simBall.lastHitBrick = brick;
 
         bouncedThisStep = true;
