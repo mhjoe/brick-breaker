@@ -609,6 +609,106 @@ function advanceWave() {
   updateHUD();
 }
 
+function distanceToSegment(px, py, x1, y1, x2, y2) {
+  const l2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
+  if (l2 === 0) return Math.hypot(px - x1, py - y1);
+  let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (x1 + t * (x2 - x1)), py - (y1 + t * (y2 - y1)));
+}
+
+function checkBrickCollisionAndReflect(ball, brick) {
+  if (ball.lastHitBrick === brick) return null;
+
+  if (
+    ball.x + ball.r < brick.x ||
+    ball.x - ball.r > brick.x + brick.w ||
+    ball.y + ball.r < brick.y ||
+    ball.y - ball.r > brick.y + brick.h
+  ) {
+    return null;
+  }
+
+  if (brick.shape) {
+    const x = brick.x;
+    const y = brick.y;
+    const w = brick.w;
+    const h = brick.h;
+
+    let faces = [];
+    if (brick.shape === 'TRIANGLE_TL') {
+      faces = [
+        { p1: { x: x, y: y }, p2: { x: x + w, y: y }, nx: 0, ny: -1 },
+        { p1: { x: x, y: y }, p2: { x: x, y: y + h }, nx: -1, ny: 0 },
+        { p1: { x: x + w, y: y }, p2: { x: x, y: y + h }, nx: 1 / Math.SQRT2, ny: 1 / Math.SQRT2 }
+      ];
+    } else if (brick.shape === 'TRIANGLE_TR') {
+      faces = [
+        { p1: { x: x, y: y }, p2: { x: x + w, y: y }, nx: 0, ny: -1 },
+        { p1: { x: x + w, y: y }, p2: { x: x + w, y: y + h }, nx: 1, ny: 0 },
+        { p1: { x: x, y: y }, p2: { x: x + w, y: y + h }, nx: -1 / Math.SQRT2, ny: 1 / Math.SQRT2 }
+      ];
+    } else if (brick.shape === 'TRIANGLE_BL') {
+      faces = [
+        { p1: { x: x, y: y + h }, p2: { x: x + w, y: y + h }, nx: 0, ny: 1 },
+        { p1: { x: x, y: y }, p2: { x: x, y: y + h }, nx: -1, ny: 0 },
+        { p1: { x: x, y: y }, p2: { x: x + w, y: y + h }, nx: 1 / Math.SQRT2, ny: -1 / Math.SQRT2 }
+      ];
+    } else if (brick.shape === 'TRIANGLE_BR') {
+      faces = [
+        { p1: { x: x, y: y + h }, p2: { x: x + w, y: y + h }, nx: 0, ny: 1 },
+        { p1: { x: x + w, y: y }, p2: { x: x + w, y: y + h }, nx: 1, ny: 0 },
+        { p1: { x: x + w, y: y }, p2: { x: x, y: y + h }, nx: -1 / Math.SQRT2, ny: -1 / Math.SQRT2 }
+      ];
+    }
+
+    let bestFace = null;
+    let minDistance = Infinity;
+
+    for (let f of faces) {
+      const dot = ball.vx * f.nx + ball.vy * f.ny;
+      if (dot >= 0) continue;
+
+      const dist = distanceToSegment(ball.x, ball.y, f.p1.x, f.p1.y, f.p2.x, f.p2.y);
+      if (dist <= ball.r + 2.0 && dist < minDistance) {
+        minDistance = dist;
+        bestFace = f;
+      }
+    }
+
+    if (bestFace) {
+      return { nx: bestFace.nx, ny: bestFace.ny };
+    }
+    return null;
+  }
+
+  // Rectangular brick
+  const minX = brick.x + brick.r;
+  const maxX = brick.x + brick.w - brick.r;
+  const minY = brick.y + brick.r;
+  const maxY = brick.y + brick.h - brick.r;
+
+  const cx = Math.max(minX, Math.min(ball.x, maxX));
+  const cy = Math.max(minY, Math.min(ball.y, maxY));
+
+  const dx = ball.x - cx;
+  const dy = ball.y - cy;
+  const distSq = dx * dx + dy * dy;
+  const targetDist = brick.r + ball.r;
+
+  if (distSq <= targetDist * targetDist && distSq > 0) {
+    const dist = Math.sqrt(distSq);
+    const nx = dx / dist;
+    const ny = dy / dist;
+    const dot = ball.vx * nx + ball.vy * ny;
+    if (dot < 0) {
+      return { nx: nx, ny: ny };
+    }
+  }
+
+  return null;
+}
+
 // --- Physics Engine ---
 function updatePhysics() {
   if (!state.isShooting) {
@@ -738,76 +838,31 @@ function updatePhysics() {
         continue;
       }
 
-      // Brick Collisions
+      // Brick Collisions (Unified Exact Geometry & Reflection Pipeline)
       for (let i = state.bricks.length - 1; i >= 0; i--) {
         const brick = state.bricks[i];
-        if (ball.lastHitBrick === brick) continue;
-        
-        if (
-          ball.x + ball.r < brick.x ||
-          ball.x - ball.r > brick.x + brick.w ||
-          ball.y + ball.r < brick.y ||
-          ball.y - ball.r > brick.y + brick.h
-        ) {
-          continue;
-        }
-
-        if (brick.shape) {
-          let nx = 0, ny = 0;
-          if (brick.shape === 'TRIANGLE_TL') { nx = 1 / Math.SQRT2; ny = 1 / Math.SQRT2; }
-          else if (brick.shape === 'TRIANGLE_TR') { nx = -1 / Math.SQRT2; ny = 1 / Math.SQRT2; }
-          else if (brick.shape === 'TRIANGLE_BL') { nx = 1 / Math.SQRT2; ny = -1 / Math.SQRT2; }
-          else if (brick.shape === 'TRIANGLE_BR') { nx = -1 / Math.SQRT2; ny = -1 / Math.SQRT2; }
-
+        const colRes = checkBrickCollisionAndReflect(ball, brick);
+        if (colRes) {
+          const nx = colRes.nx;
+          const ny = colRes.ny;
           const dot = ball.vx * nx + ball.vy * ny;
-          if (dot < 0) {
+
+          if (ball.type.id.startsWith('DIFFUSE') || ball.type.id === 'DIFFUSE_CROSS' || ball.type.id === 'GOD_PULSE') {
+            randomizeBounce(ball, nx, ny);
+          } else {
             ball.vx = ball.vx - 2 * dot * nx;
             ball.vy = ball.vy - 2 * dot * ny;
-            ball.bounces++;
-            sounds.playBounce();
-            ball.lastHitBrick = brick;
-            damageBrick(brick, ball.type.damage, true);
-            continue;
           }
-        }
 
-        const minX = brick.x + brick.r;
-        const maxX = brick.x + brick.w - brick.r;
-        const minY = brick.y + brick.r;
-        const maxY = brick.y + brick.h - brick.r;
+          ball.x += nx * 0.5;
+          ball.y += ny * 0.5;
+          ball.lastHitBrick = brick;
 
-        const cx = Math.max(minX, Math.min(ball.x, maxX));
-        const cy = Math.max(minY, Math.min(ball.y, maxY));
+          ball.bounces++;
+          sounds.playBounce();
 
-        const dx = ball.x - cx;
-        const dy = ball.y - cy;
-        const distSq = dx * dx + dy * dy;
-        const targetDist = brick.r + ball.r;
-
-        if (distSq <= targetDist * targetDist && distSq > 0) {
-          const dist = Math.sqrt(distSq);
-          const nx = dx / dist;
-          const ny = dy / dist;
-
-          const dot = ball.vx * nx + ball.vy * ny;
-          if (dot < 0) {
-            if (ball.type.id.startsWith('DIFFUSE') || ball.type.id === 'DIFFUSE_CROSS') {
-              randomizeBounce(ball, nx, ny);
-            } else {
-              ball.vx = ball.vx - 2 * dot * nx;
-              ball.vy = ball.vy - 2 * dot * ny;
-            }
-
-            ball.x = cx + nx * (targetDist + 0.3);
-            ball.y = cy + ny * (targetDist + 0.3);
-            ball.lastHitBrick = brick;
-
-            ball.bounces++;
-            sounds.playBounce();
-
-            triggerLightImpactFX(ball, brick, ball.x, ball.y, nx, ny);
-            applyBallEffect(ball, brick);
-          }
+          triggerLightImpactFX(ball, brick, ball.x, ball.y, nx, ny);
+          applyBallEffect(ball, brick);
           break;
         }
       }
@@ -948,6 +1003,10 @@ function applyBallEffect(ball, hitBrick) {
   } else if (ball.type.id === 'SUPER_POWER') {
     sounds.playExplosion();
     sounds.playLaser();
+    state.screenShake = 14;
+    state.shockwaves.push({ x: bx, y: by, r: 5, maxR: 120, color: '#ff3838', alpha: 1 });
+    addBeamEffect('horizontal', hitBrick.y + hitBrick.h / 2, '#ff3838');
+    addBeamEffect('vertical', hitBrick.x + hitBrick.w / 2, '#ff3838');
     for (let b of state.bricks) {
       if (b !== hitBrick) damageBrick(b, 5, false);
     }
@@ -955,21 +1014,23 @@ function applyBallEffect(ball, hitBrick) {
     for (let b of fireNeighbors) {
       damageBrick(b, 10, false);
     }
-    addBeamEffect('horizontal', hitBrick.y + hitBrick.h / 2, '#ff3838');
-    addBeamEffect('vertical', hitBrick.x + hitBrick.w / 2, '#ff3838');
     for (let b of state.bricks) {
       if (b !== hitBrick && (b.col === col || b.row === row)) {
         damageBrick(b, 5, false);
       }
     }
-    createFloatingText(bx, by, '⚡🔥💥 초강력 파멸!', '#ff3838');
+    createFloatingText(bx, by, '⚡🔥💥 초강력 파멸 (25)!', '#ff3838');
   } else if (ball.type.id === 'GOD_PULSE') {
     sounds.playExplosion();
     sounds.playLaser();
+    state.screenShake = 16;
+    state.shockwaves.push({ x: bx, y: by, r: 5, maxR: 150, color: '#ffaf40', alpha: 1 });
+    addBeamEffect('horizontal', hitBrick.y + hitBrick.h / 2, '#ffaf40');
+    addBeamEffect('vertical', hitBrick.x + hitBrick.w / 2, '#ffaf40');
     for (let b of state.bricks) {
       if (b !== hitBrick) damageBrick(b, 7, false);
     }
-    createFloatingText(bx, by, '🌀⚡💥 갓 플라즈마!', '#ffaf40');
+    createFloatingText(bx, by, '🌀⚡💥 갓 플라즈마 (30)!', '#ffaf40');
   }
 
   // --- Regular Abilities ---
@@ -1723,12 +1784,22 @@ function drawActiveBalls() {
     if (!b.active) continue;
     ctx.save();
     
+    if (b.type.isSuper) {
+      ctx.shadowColor = b.type.color;
+      ctx.shadowBlur = 15;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r + 3 + Math.sin(Date.now() / 80) * 2, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
     ctx.fillStyle = b.type.color;
     ctx.beginPath();
     ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
     ctx.fill();
 
-    if (b.type.isSynergy) {
+    if (b.type.isSynergy || b.type.isSuper) {
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
       ctx.arc(b.x, b.y, b.r * 0.4, 0, Math.PI * 2);
@@ -1804,49 +1875,23 @@ function drawAimLine() {
 
     for (let i = state.bricks.length - 1; i >= 0; i--) {
       const brick = state.bricks[i];
-      if (simBall.lastHitBrick === brick) continue;
-
-      if (
-        simBall.x + simBall.r < brick.x ||
-        simBall.x - simBall.r > brick.x + brick.w ||
-        simBall.y + ballR < brick.y ||
-        simBall.y - ballR > brick.y + brick.h
-      ) {
-        continue;
-      }
-
-      const minX = brick.x + brick.r;
-      const maxX = brick.x + brick.w - brick.r;
-      const minY = brick.y + brick.r;
-      const maxY = brick.y + brick.h - brick.r;
-
-      const cx = Math.max(minX, Math.min(simBall.x, maxX));
-      const cy = Math.max(minY, Math.min(simBall.y, maxY));
-
-      const dx = simBall.x - cx;
-      const dy = simBall.y - cy;
-      const distSq = dx * dx + dy * dy;
-      const targetDist = brick.r + simBall.r;
-
-      if (distSq <= targetDist * targetDist && distSq > 0) {
-        const dist = Math.sqrt(distSq);
-        const nx = dx / dist;
-        const ny = dy / dist;
-
+      const colRes = checkBrickCollisionAndReflect(simBall, brick);
+      if (colRes) {
+        const nx = colRes.nx;
+        const ny = colRes.ny;
         const dot = simBall.vx * nx + simBall.vy * ny;
-        if (dot < 0) {
-          simBall.vx = simBall.vx - 2 * dot * nx;
-          simBall.vy = simBall.vy - 2 * dot * ny;
-          simBall.x = cx + nx * (targetDist + 0.3);
-          simBall.y = cy + ny * (targetDist + 0.3);
-          simBall.lastHitBrick = brick;
 
-          bouncedThisStep = true;
-          bouncePoints.push({ x: simBall.x, y: simBall.y, isBrick: true });
-          brickHits++;
-          bounces++;
-          break;
-        }
+        simBall.vx = simBall.vx - 2 * dot * nx;
+        simBall.vy = simBall.vy - 2 * dot * ny;
+        simBall.x += nx * 0.5;
+        simBall.y += ny * 0.5;
+        simBall.lastHitBrick = brick;
+
+        bouncedThisStep = true;
+        bouncePoints.push({ x: simBall.x, y: simBall.y, isBrick: true });
+        brickHits++;
+        bounces++;
+        break;
       }
     }
 
