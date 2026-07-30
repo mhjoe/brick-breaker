@@ -139,7 +139,11 @@ const BALL_TYPES = {
   DIFFUSE_CROSS: { id: 'DIFFUSE_CROSS', name: '하이브리드 난반사십자공', grade: 'SSR', color: '#ef5777', icon: '🌀➕', damage: 2, desc: '난반사 궤적으로 튕기며 매 적중 시 2뎀 십자 빔', isHybrid: true, isSynergy: 2 },
   PLASMA: { id: 'PLASMA', name: '하이브리드 플라즈마공', grade: 'SSR', color: '#ff5e57', icon: '⚡🔥', damage: 3, desc: '타격 3뎀 + 주변 모든 인접 블록 3뎀 플라즈마 폭발', isHybrid: true, isSynergy: 2 },
   BOMB_CROSS: { id: 'BOMB_CROSS', name: '하이브리드 폭발십자공', grade: 'SSR', color: '#ffc048', icon: '💣➕', damage: 8, desc: '타격 8뎀 + 가로/세로 전체 4뎀 폭발 레이저', isHybrid: true, isSynergy: 2 },
-  HYBRID_GENERIC: { id: 'HYBRID_GENERIC', name: '하이브리드 융합공', grade: 'SSR', color: '#ffdd59', icon: '✨🔮', damage: 3, desc: '타격 3뎀 + 인접 블록 4개 2뎀 만능 방전', isHybrid: true, isSynergy: 2 }
+  HYBRID_GENERIC: { id: 'HYBRID_GENERIC', name: '하이브리드 융합공', grade: 'SSR', color: '#ffdd59', icon: '✨🔮', damage: 3, desc: '타격 3뎀 + 인접 블록 4개 2뎀 만능 방전', isHybrid: true, isSynergy: 2 },
+
+  // 👑 Ultimate Super Power Balls (★3) 👑
+  SUPER_POWER: { id: 'SUPER_POWER', name: '초강력 파멸 시너지공★3', grade: 'UR', color: '#ff3838', icon: '⚡🔥💥', damage: 25, desc: '타격 25뎀 + 화면 전체 5뎀 벼락 + 3x3 10뎀 핵폭발 + 십자 5뎀 파괴 레이저 동시 발동!', isSynergy: 3, isSuper: true },
+  GOD_PULSE: { id: 'GOD_PULSE', name: '초강력 갓플라즈마공★3', grade: 'UR', color: '#ffaf40', icon: '🌀⚡💥', damage: 30, desc: '타격 30뎀 + 화면 내 모든 블록 7뎀 만유 방전 + 난반사 궤적', isSynergy: 3, isSuper: true }
 };
 
 const BRICK_TYPES = {
@@ -337,6 +341,11 @@ function spawnBrickRow() {
         hp = Math.max(1, Math.floor(baseHp * 0.8));
       }
       
+      // 22% chance of spawning triangle brick
+      const isTriangle = Math.random() < 0.22;
+      const shapes = ['TRIANGLE_TL', 'TRIANGLE_TR', 'TRIANGLE_BL', 'TRIANGLE_BR'];
+      const shape = isTriangle ? shapes[Math.floor(Math.random() * shapes.length)] : null;
+
       state.bricks.push({
         col: c,
         row: 0,
@@ -349,6 +358,7 @@ function spawnBrickRow() {
         hp: hp,
         maxHp: hp,
         type: type,
+        shape: shape,
         hitFlash: 0
       });
     }
@@ -421,7 +431,10 @@ function setupEventListeners() {
     if (e.code === 'ArrowRight' || e.key === 'ArrowRight' || e.code === 'KeyD') {
       keys.ArrowRight = true;
     }
-    if (e.code === 'KeyE') {
+    if (e.code === 'KeyX' || e.key === 'x' || e.key === 'X' || e.code === 'KeyE' || e.key === 'e' || e.key === 'E') {
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        return;
+      }
       const btnSkill = document.getElementById('btnSkill');
       if (btnSkill && !btnSkill.disabled) {
         btnSkill.click();
@@ -505,6 +518,10 @@ function setupEventListeners() {
   const btnHybridAll = document.getElementById('btnFuseAllHybrid');
   if (btnHybridAll) {
     btnHybridAll.addEventListener('click', fuseAllHybridBalls);
+  }
+  const btnSuperAll = document.getElementById('btnFuseAllSuper');
+  if (btnSuperAll) {
+    btnSuperAll.addEventListener('click', fuseAllSuperBalls);
   }
 
   document.getElementById('btnOpenTalent').addEventListener('click', () => {
@@ -735,6 +752,25 @@ function updatePhysics() {
           continue;
         }
 
+        if (brick.shape) {
+          let nx = 0, ny = 0;
+          if (brick.shape === 'TRIANGLE_TL') { nx = 1 / Math.SQRT2; ny = 1 / Math.SQRT2; }
+          else if (brick.shape === 'TRIANGLE_TR') { nx = -1 / Math.SQRT2; ny = 1 / Math.SQRT2; }
+          else if (brick.shape === 'TRIANGLE_BL') { nx = 1 / Math.SQRT2; ny = -1 / Math.SQRT2; }
+          else if (brick.shape === 'TRIANGLE_BR') { nx = -1 / Math.SQRT2; ny = -1 / Math.SQRT2; }
+
+          const dot = ball.vx * nx + ball.vy * ny;
+          if (dot < 0) {
+            ball.vx = ball.vx - 2 * dot * nx;
+            ball.vy = ball.vy - 2 * dot * ny;
+            ball.bounces++;
+            sounds.playBounce();
+            ball.lastHitBrick = brick;
+            damageBrick(brick, ball.type.damage, true);
+            continue;
+          }
+        }
+
         const minX = brick.x + brick.r;
         const maxX = brick.x + brick.w - brick.r;
         const minY = brick.y + brick.r;
@@ -909,6 +945,32 @@ function applyBallEffect(ball, hitBrick) {
     for (let b of elecNeighbors.slice(0, 4)) {
       damageBrick(b, 2, false);
     }
+  } else if (ball.type.id === 'SUPER_POWER') {
+    sounds.playExplosion();
+    sounds.playLaser();
+    for (let b of state.bricks) {
+      if (b !== hitBrick) damageBrick(b, 5, false);
+    }
+    const fireNeighbors = getAdjacentBricks(col, row);
+    for (let b of fireNeighbors) {
+      damageBrick(b, 10, false);
+    }
+    addBeamEffect('horizontal', hitBrick.y + hitBrick.h / 2, '#ff3838');
+    addBeamEffect('vertical', hitBrick.x + hitBrick.w / 2, '#ff3838');
+    for (let b of state.bricks) {
+      if (b !== hitBrick && (b.col === col || b.row === row)) {
+        damageBrick(b, 5, false);
+      }
+    }
+    createFloatingText(bx, by, '⚡🔥💥 초강력 파멸!', '#ff3838');
+  } else if (ball.type.id === 'GOD_PULSE') {
+    sounds.playExplosion();
+    sounds.playLaser();
+    for (let b of state.bricks) {
+      if (b !== hitBrick) damageBrick(b, 7, false);
+    }
+    createFloatingText(bx, by, '🌀⚡💥 갓 플라즈마!', '#ffaf40');
+  }
   }
 
   // --- Regular Abilities ---
@@ -1160,6 +1222,71 @@ function renderFusionList() {
     hybridSection.appendChild(listDiv);
   }
   container.appendChild(hybridSection);
+
+  // 3. 초강력 시너지 융합 (Super Power Merge ★3)
+  const superSection = document.createElement('div');
+  superSection.className = 'fusion-section';
+  superSection.style.marginTop = '16px';
+  superSection.innerHTML = `
+    <div style="font-size:0.88rem; font-weight:800; color:#ff3838; padding:4px 0 8px 0; border-bottom:1px solid rgba(255,255,255,0.1); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+      <span>💥 초강력 시너지 융합</span>
+      <span style="font-size:0.75rem; font-weight:400; color:#a0aec0;">(★2 강화공 또는 하이브리드공 융합)</span>
+    </div>
+  `;
+
+  const countsHigh = {};
+  for (let b of state.ownedBalls) {
+    if (b.isSynergy === 2 || b.isHybrid) {
+      countsHigh[b.id] = (countsHigh[b.id] || 0) + 1;
+    }
+  }
+
+  const availableHighIds = Object.keys(countsHigh).filter(id => countsHigh[id] >= 1);
+  const superPairs = [];
+
+  for (let i = 0; i < availableHighIds.length; i++) {
+    for (let j = i; j < availableHighIds.length; j++) {
+      const id1 = availableHighIds[i];
+      const id2 = availableHighIds[j];
+      const req = (id1 === id2) ? 2 : 1;
+      if (countsHigh[id1] >= req && countsHigh[id2] >= 1) {
+        const b1 = BALL_TYPES[id1];
+        const b2 = BALL_TYPES[id2];
+        const res = (b1.isHybrid && b2.isHybrid) ? BALL_TYPES.GOD_PULSE : BALL_TYPES.SUPER_POWER;
+        superPairs.push({ id1, id2, result: res });
+      }
+    }
+  }
+
+  if (superPairs.length === 0) {
+    superSection.innerHTML += `<p style="font-size:0.78rem; color:#a0aec0; padding:8px 0; text-align:center;">초강력 융합에 필요한 ★2 강화공 또는 하이브리드 공이 부족합니다.</p>`;
+  } else {
+    const listDiv = document.createElement('div');
+    listDiv.style.display = 'flex';
+    listDiv.style.flexDirection = 'column';
+    listDiv.style.gap = '8px';
+
+    superPairs.forEach(pair => {
+      const b1 = BALL_TYPES[pair.id1];
+      const b2 = BALL_TYPES[pair.id2];
+      const res = pair.result;
+
+      const item = document.createElement('div');
+      item.className = 'talent-item';
+      item.innerHTML = `
+        <div class="talent-info">
+          <h4>${b1.icon} ${b1.name} + ${b2.icon} ${b2.name} ➔ ${res.icon} ${res.name}</h4>
+          <p style="color:#ff3838; font-weight:700; margin-top:2px;">💥 초강력 효과: ${res.desc}</p>
+        </div>
+        <button class="btn-upgrade btn-fuse" style="background:linear-gradient(135deg, #ff3838, #ffaf40);" onclick="fuseSuperBalls('${pair.id1}', '${pair.id2}')">
+          💥 초강력 융합
+        </button>
+      `;
+      listDiv.appendChild(item);
+    });
+    superSection.appendChild(listDiv);
+  }
+  container.appendChild(superSection);
 }
 
 // In-Place Same-Type Fusion
@@ -1291,6 +1418,75 @@ function fuseAllHybridBalls() {
   renderFusionList();
 }
 
+window.fuseSuperBalls = function(id1, id2) {
+  let idx1 = -1;
+  let idx2 = -1;
+
+  for (let i = 0; i < state.ownedBalls.length; i++) {
+    if (state.ownedBalls[i].id === id1 && idx1 === -1) {
+      idx1 = i;
+    } else if (state.ownedBalls[i].id === id2 && idx2 === -1) {
+      idx2 = i;
+    }
+    if (idx1 !== -1 && idx2 !== -1) break;
+  }
+
+  if (idx1 === -1 || idx2 === -1) return;
+
+  const b1 = BALL_TYPES[id1];
+  const b2 = BALL_TYPES[id2];
+  let superBall = BALL_TYPES.SUPER_POWER;
+  if (b1.isHybrid && b2.isHybrid) {
+    superBall = BALL_TYPES.GOD_PULSE;
+  }
+
+  const minIdx = Math.min(idx1, idx2);
+  const maxIdx = Math.max(idx1, idx2);
+
+  state.ownedBalls[minIdx] = superBall;
+  state.ownedBalls.splice(maxIdx, 1);
+
+  sounds.playExplosion();
+  createFloatingText(canvas.width / 2, canvas.height / 2, `👑 초강력 시너지 융합 성공: ${superBall.name}!`, superBall.color);
+
+  updateHUD();
+  renderFusionList();
+};
+
+function fuseAllSuperBalls() {
+  let mergedAny = false;
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let i = 0; i < state.ownedBalls.length; i++) {
+      const b1 = state.ownedBalls[i];
+      if (b1.isSynergy !== 2 && !b1.isHybrid) continue;
+
+      for (let j = i + 1; j < state.ownedBalls.length; j++) {
+        const b2 = state.ownedBalls[j];
+        if (b2.isSynergy === 2 || b2.isHybrid) {
+          const result = (b1.isHybrid && b2.isHybrid) ? BALL_TYPES.GOD_PULSE : BALL_TYPES.SUPER_POWER;
+          state.ownedBalls[i] = result;
+          state.ownedBalls.splice(j, 1);
+          mergedAny = true;
+          changed = true;
+          break;
+        }
+      }
+      if (changed) break;
+    }
+  }
+
+  if (mergedAny) {
+    sounds.playExplosion();
+    createFloatingText(canvas.width / 2, canvas.height / 2, `💥 모두 초강력 융합 완료!`, '#ff3838');
+  }
+
+  updateHUD();
+  renderFusionList();
+}
+
 // --- Talents System ---
 const TALENT_DEFS = [
   { id: 'seashellBoost', name: '조개 획득량 증가', desc: '타격/파괴 시 조개 획득량 +20% 증가', maxLv: 5 },
@@ -1409,6 +1605,28 @@ function drawBackground() {
   }
 }
 
+function drawTriangleShape(ctx, x, y, w, h, shape) {
+  ctx.beginPath();
+  if (shape === 'TRIANGLE_TL') {
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + w, y);
+    ctx.lineTo(x, y + h);
+  } else if (shape === 'TRIANGLE_TR') {
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + w, y);
+    ctx.lineTo(x + w, y + h);
+  } else if (shape === 'TRIANGLE_BL') {
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, y + h);
+    ctx.lineTo(x + w, y + h);
+  } else if (shape === 'TRIANGLE_BR') {
+    ctx.moveTo(x + w, y);
+    ctx.lineTo(x + w, y + h);
+    ctx.lineTo(x, y + h);
+  }
+  ctx.closePath();
+}
+
 function drawBricks() {
   for (let b of state.bricks) {
     ctx.save();
@@ -1422,7 +1640,11 @@ function drawBricks() {
     }
 
     ctx.fillStyle = color;
-    drawRoundedRect(ctx, b.x, b.y, b.w, b.h, b.r);
+    if (b.shape) {
+      drawTriangleShape(ctx, b.x, b.y, b.w, b.h, b.shape);
+    } else {
+      drawRoundedRect(ctx, b.x, b.y, b.w, b.h, b.r);
+    }
     ctx.fill();
 
     if (isFlashing) {
@@ -1449,15 +1671,22 @@ function drawBricks() {
     else if (b.type === BRICK_TYPES.BONUS_EXPLODE) { iconStr = '💥'; labelStr = '3x3폭발'; }
     else if (b.type === BRICK_TYPES.BONUS_LIGHTNING) { iconStr = '⚡'; labelStr = '전체벼락'; }
 
+    let textX = b.x + b.w / 2;
+    let textY = b.y + b.h / 2;
+    if (b.shape === 'TRIANGLE_TL') { textX = b.x + b.w * 0.35; textY = b.y + b.h * 0.35; }
+    else if (b.shape === 'TRIANGLE_TR') { textX = b.x + b.w * 0.65; textY = b.y + b.h * 0.35; }
+    else if (b.shape === 'TRIANGLE_BL') { textX = b.x + b.w * 0.35; textY = b.y + b.h * 0.65; }
+    else if (b.shape === 'TRIANGLE_BR') { textX = b.x + b.w * 0.65; textY = b.y + b.h * 0.65; }
+
     if (labelStr) {
-      ctx.font = 'bold 13px sans-serif';
-      ctx.fillText(`${iconStr}${b.hp}`, b.x + b.w / 2, b.y + b.h / 2 - 7);
-      ctx.font = '800 10px sans-serif';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText(`${iconStr}${b.hp}`, textX, textY - 6);
+      ctx.font = '800 9px sans-serif';
       ctx.fillStyle = isFlashing ? '#ff4757' : '#ffe066';
-      ctx.fillText(labelStr, b.x + b.w / 2, b.y + b.h / 2 + 9);
+      ctx.fillText(labelStr, textX, textY + 8);
     } else {
-      ctx.font = 'bold 17px sans-serif';
-      ctx.fillText(`${b.hp}`, b.x + b.w / 2, b.y + b.h / 2);
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillText(`${b.hp}`, textX, textY);
     }
 
     ctx.restore();
@@ -1756,16 +1985,17 @@ function updateSkillUI() {
   const btnSkill = document.getElementById('btnSkill');
   if (btnSkill) {
     if (state.barrierActive) {
-      btnSkill.innerText = '🛡️ 방어벽 활성화됨';
+      btnSkill.innerText = '🛡️ 방어벽 (X) 활성화됨';
       btnSkill.classList.remove('ready');
       btnSkill.disabled = true;
     } else {
       const pct = Math.floor((state.skillCharge / state.maxSkillCharge) * 100);
-      btnSkill.innerText = `🛡️ 방어벽 (${pct}%)`;
       if (state.skillCharge >= state.maxSkillCharge) {
+        btnSkill.innerText = '🛡️ 방어벽 (X) READY!';
         btnSkill.classList.add('ready');
         btnSkill.disabled = false;
       } else {
+        btnSkill.innerText = `🛡️ 방어벽 (X) (${pct}%)`;
         btnSkill.classList.remove('ready');
         btnSkill.disabled = true;
       }
