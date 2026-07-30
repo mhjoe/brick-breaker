@@ -103,43 +103,43 @@ const sounds = new SoundManager();
 // --- Ball Definitions (Including 7 New Cross-Element Hybrid Balls!) ---
 const BALL_TYPES = {
   // Base Balls (R, SR, SSR)
-  BASIC: { id: 'BASIC', name: '기본공', grade: 'R', color: '#70a1ff', icon: '🔵', damage: 1, synergyId: 'BASIC_PLUS' },
-  DIFFUSE: { id: 'DIFFUSE', name: '난반사공', grade: 'SR', color: '#a55eea', icon: '🌀', damage: 1, synergyId: 'DIFFUSE_PLUS' },
-  CROSS: { id: 'CROSS', name: '십자파괴공', grade: 'SSR', color: '#ff6b81', icon: '➕', damage: 1, synergyId: 'CROSS_PLUS' },
-  ROW: { id: 'ROW', name: '가로파괴공', grade: 'SR', color: '#eccc68', icon: '↔️', damage: 1, synergyId: 'ROW_PLUS' },
-  COL: { id: 'COL', name: '세로파괴공', grade: 'SR', color: '#70a1ff', icon: '↕️', damage: 1, synergyId: 'COL_PLUS' },
-  BOMB: { id: 'BOMB', name: '폭탄공', grade: 'SSR', color: '#ff4757', icon: '💣', damage: 5, synergyId: 'BOMB_PLUS' },
-  FIRE: { id: 'FIRE', name: '화염공', grade: 'SR', color: '#ffa502', icon: '🔥', damage: 1, synergyId: 'FIRE_PLUS' },
-  ELEC: { id: 'ELEC', name: '전기공', grade: 'SR', color: '#1e90ff', icon: '⚡', damage: 1, synergyId: 'ELEC_PLUS' },
+  BASIC: { id: 'BASIC', name: '기본공', grade: 'R', color: '#70a1ff', icon: '🔵', damage: 1, desc: '표준 단일 타격 (데미지 1)', synergyId: 'BASIC_PLUS' },
+  DIFFUSE: { id: 'DIFFUSE', name: '난반사공', grade: 'SR', color: '#a55eea', icon: '🌀', damage: 1, desc: '불규칙 무작위 튕김 궤적 (1뎀)', synergyId: 'DIFFUSE_PLUS' },
+  CROSS: { id: 'CROSS', name: '십자파괴공', grade: 'SSR', color: '#ff6b81', icon: '➕', damage: 1, desc: '가로/세로 전체 줄 십자 빔 (1뎀)', synergyId: 'CROSS_PLUS' },
+  ROW: { id: 'ROW', name: '가로파괴공', grade: 'SR', color: '#eccc68', icon: '↔️', damage: 1, desc: '적중한 가로 줄 전체 레이저 (1뎀)', synergyId: 'ROW_PLUS' },
+  COL: { id: 'COL', name: '세로파괴공', grade: 'SR', color: '#70a1ff', icon: '↕️', damage: 1, desc: '적중한 세로 열 전체 레이저 (1뎀)', synergyId: 'COL_PLUS' },
+  BOMB: { id: 'BOMB', name: '폭탄공', grade: 'SSR', color: '#ff4757', icon: '💣', damage: 5, desc: '단일 타격 5 데미지 폭발', synergyId: 'BOMB_PLUS' },
+  FIRE: { id: 'FIRE', name: '화염공', grade: 'SR', color: '#ffa502', icon: '🔥', damage: 1, desc: '인접 블록 3개에 화염 스플래시 (1뎀)', synergyId: 'FIRE_PLUS' },
+  ELEC: { id: 'ELEC', name: '전기공', grade: 'SR', color: '#1e90ff', icon: '⚡', damage: 1, desc: '주변 블록 3개에 감전 벼락 방전 (1뎀)', synergyId: 'ELEC_PLUS' },
 
   // +1 Synergy Balls (★)
-  BASIC_PLUS: { id: 'BASIC_PLUS', name: '강화 기본공+1★', grade: 'SR', color: '#00d2ff', icon: '🔵★', damage: 2, isSynergy: 1, synergyId: 'BASIC_PLUS2' },
-  DIFFUSE_PLUS: { id: 'DIFFUSE_PLUS', name: '강화 난반사공+1★', grade: 'SSR', color: '#8854d0', icon: '🌀★', damage: 2, isSynergy: 1, synergyId: 'DIFFUSE_PLUS2' },
-  CROSS_PLUS: { id: 'CROSS_PLUS', name: '강화 십자파괴공+1★', grade: 'SSR', color: '#fc5c65', icon: '➕★', damage: 2, isSynergy: 1, synergyId: 'CROSS_PLUS2' },
-  ROW_PLUS: { id: 'ROW_PLUS', name: '강화 가로파괴공+1★', grade: 'SSR', color: '#fed330', icon: '↔️★', damage: 2, isSynergy: 1, synergyId: 'ROW_PLUS2' },
-  COL_PLUS: { id: 'COL_PLUS', name: '강화 세로파괴공+1★', grade: 'SSR', color: '#45aaf2', icon: '↕️★', damage: 2, isSynergy: 1, synergyId: 'COL_PLUS2' },
-  BOMB_PLUS: { id: 'BOMB_PLUS', name: '강화 폭탄공+1★', grade: 'SSR', color: '#eb3b5a', icon: '💣★', damage: 10, isSynergy: 1, synergyId: 'BOMB_PLUS2' },
-  FIRE_PLUS: { id: 'FIRE_PLUS', name: '강화 화염공+1★', grade: 'SSR', color: '#fa8231', icon: '🔥★', damage: 2, isSynergy: 1, synergyId: 'FIRE_PLUS2' },
-  ELEC_PLUS: { id: 'ELEC_PLUS', name: '강화 전기공+1★', grade: 'SSR', color: '#2d98da', icon: '⚡★', damage: 2, isSynergy: 1, synergyId: 'ELEC_PLUS2' },
+  BASIC_PLUS: { id: 'BASIC_PLUS', name: '강화 기본공+1★', grade: 'SR', color: '#00d2ff', icon: '🔵★', damage: 2, desc: '기본 데미지 2로 증가', isSynergy: 1, synergyId: 'BASIC_PLUS2' },
+  DIFFUSE_PLUS: { id: 'DIFFUSE_PLUS', name: '강화 난반사공+1★', grade: 'SSR', color: '#8854d0', icon: '🌀★', damage: 2, desc: '데미지 2 + 극대화된 무작위 튕김 궤적', isSynergy: 1, synergyId: 'DIFFUSE_PLUS2' },
+  CROSS_PLUS: { id: 'CROSS_PLUS', name: '강화 십자파괴공+1★', grade: 'SSR', color: '#fc5c65', icon: '➕★', damage: 2, desc: '데미지 2 + 가로/세로 전체 십자 빔 (2뎀)', isSynergy: 1, synergyId: 'CROSS_PLUS2' },
+  ROW_PLUS: { id: 'ROW_PLUS', name: '강화 가로파괴공+1★', grade: 'SSR', color: '#fed330', icon: '↔️★', damage: 2, desc: '데미지 2 + 상하 3행 광역 레이저 (2뎀)', isSynergy: 1, synergyId: 'ROW_PLUS2' },
+  COL_PLUS: { id: 'COL_PLUS', name: '강화 세로파괴공+1★', grade: 'SSR', color: '#45aaf2', icon: '↕️★', damage: 2, desc: '데미지 2 + 좌우 3열 광역 레이저 (2뎀)', isSynergy: 1, synergyId: 'COL_PLUS2' },
+  BOMB_PLUS: { id: 'BOMB_PLUS', name: '강화 폭탄공+1★', grade: 'SSR', color: '#eb3b5a', icon: '💣★', damage: 10, desc: '단일 타격 10 데미지 초강력 폭발', isSynergy: 1, synergyId: 'BOMB_PLUS2' },
+  FIRE_PLUS: { id: 'FIRE_PLUS', name: '강화 화염공+1★', grade: 'SSR', color: '#fa8231', icon: '🔥★', damage: 2, desc: '데미지 2 + 인접 블록 6개 연쇄 화염 (2뎀)', isSynergy: 1, synergyId: 'FIRE_PLUS2' },
+  ELEC_PLUS: { id: 'ELEC_PLUS', name: '강화 전기공+1★', grade: 'SSR', color: '#2d98da', icon: '⚡★', damage: 2, desc: '데미지 2 + 주변 블록 6개 감전 벼락 (2뎀)', isSynergy: 1, synergyId: 'ELEC_PLUS2' },
 
   // +2 Synergy Balls (★★)
-  BASIC_PLUS2: { id: 'BASIC_PLUS2', name: '강화 기본공+2★★', grade: 'SSR', color: '#00ffff', icon: '🔵★★', damage: 3, isSynergy: 2 },
-  DIFFUSE_PLUS2: { id: 'DIFFUSE_PLUS2', name: '강화 난반사공+2★★', grade: 'SSR', color: '#b8e994', icon: '🌀★★', damage: 3, isSynergy: 2 },
-  CROSS_PLUS2: { id: 'CROSS_PLUS2', name: '강화 십자파괴공+2★★', grade: 'SSR', color: '#ff4757', icon: '➕★★', damage: 3, isSynergy: 2 },
-  ROW_PLUS2: { id: 'ROW_PLUS2', name: '강화 가로파괴공+2★★', grade: 'SSR', color: '#ffb142', icon: '↔️★★', damage: 3, isSynergy: 2 },
-  COL_PLUS2: { id: 'COL_PLUS2', name: '강화 세로파괴공+2★★', grade: 'SSR', color: '#2bcbba', icon: '↕️★★', damage: 3, isSynergy: 2 },
-  BOMB_PLUS2: { id: 'BOMB_PLUS2', name: '강화 폭탄공+2★★', grade: 'SSR', color: '#ff2d55', icon: '💣★★', damage: 18, isSynergy: 2 },
-  FIRE_PLUS2: { id: 'FIRE_PLUS2', name: '강화 화염공+2★★', grade: 'SSR', color: '#ff5252', icon: '🔥★★', damage: 3, isSynergy: 2 },
-  ELEC_PLUS2: { id: 'ELEC_PLUS2', name: '강화 전기공+2★★', grade: 'SSR', color: '#18dcff', icon: '⚡★★', damage: 3, isSynergy: 2 },
+  BASIC_PLUS2: { id: 'BASIC_PLUS2', name: '강화 기본공+2★★', grade: 'SSR', color: '#00ffff', icon: '🔵★★', damage: 3, desc: '기본 데미지 3으로 증가', isSynergy: 2 },
+  DIFFUSE_PLUS2: { id: 'DIFFUSE_PLUS2', name: '강화 난반사공+2★★', grade: 'SSR', color: '#b8e994', icon: '🌀★★', damage: 3, desc: '데미지 3 + 초고속 광기 난반사 궤적', isSynergy: 2 },
+  CROSS_PLUS2: { id: 'CROSS_PLUS2', name: '강화 십자파괴공+2★★', grade: 'SSR', color: '#ff4757', icon: '➕★★', damage: 3, desc: '데미지 3 + 가로/세로 전체 십자 빔 (3뎀)', isSynergy: 2 },
+  ROW_PLUS2: { id: 'ROW_PLUS2', name: '강화 가로파괴공+2★★', grade: 'SSR', color: '#ffb142', icon: '↔️★★', damage: 3, desc: '데미지 3 + 상하 5행 광역 레이저 (3뎀)', isSynergy: 2 },
+  COL_PLUS2: { id: 'COL_PLUS2', name: '강화 세로파괴공+2★★', grade: 'SSR', color: '#2bcbba', icon: '↕️★★', damage: 3, desc: '데미지 3 + 좌우 5열 광역 레이저 (3뎀)', isSynergy: 2 },
+  BOMB_PLUS2: { id: 'BOMB_PLUS2', name: '강화 폭탄공+2★★', grade: 'SSR', color: '#ff2d55', icon: '💣★★', damage: 18, desc: '단일 타격 18 데미지 파멸적 폭발', isSynergy: 2 },
+  FIRE_PLUS2: { id: 'FIRE_PLUS2', name: '강화 화염공+2★★', grade: 'SSR', color: '#ff5252', icon: '🔥★★', damage: 3, desc: '데미지 3 + 인접 블록 9개 대화재 폭발 (3뎀)', isSynergy: 2 },
+  ELEC_PLUS2: { id: 'ELEC_PLUS2', name: '강화 전기공+2★★', grade: 'SSR', color: '#18dcff', icon: '⚡★★', damage: 3, desc: '데미지 3 + 주변 블록 9개 초고압 벼락 (3뎀)', isSynergy: 2 },
 
   // 🧪 7 New Cross-Element Hybrid Balls! 🧪
-  FIRE_BOMB: { id: 'FIRE_BOMB', name: '하이브리드 화염폭탄공', grade: 'SSR', color: '#ff3f34', icon: '💥🔥', damage: 6, isHybrid: true, isSynergy: 2 },
-  ELEC_ROW: { id: 'ELEC_ROW', name: '하이브리드 전격가로공', grade: 'SSR', color: '#00d8d6', icon: '⚡↔️', damage: 2, isHybrid: true, isSynergy: 2 },
-  ELEC_COL: { id: 'ELEC_COL', name: '하이브리드 전격세로공', grade: 'SSR', color: '#0be881', icon: '⚡↕️', damage: 2, isHybrid: true, isSynergy: 2 },
-  DIFFUSE_CROSS: { id: 'DIFFUSE_CROSS', name: '하이브리드 난반사십자공', grade: 'SSR', color: '#ef5777', icon: '🌀➕', damage: 2, isHybrid: true, isSynergy: 2 },
-  PLASMA: { id: 'PLASMA', name: '하이브리드 플라즈마공', grade: 'SSR', color: '#ff5e57', icon: '⚡🔥', damage: 3, isHybrid: true, isSynergy: 2 },
-  BOMB_CROSS: { id: 'BOMB_CROSS', name: '하이브리드 폭발십자공', grade: 'SSR', color: '#ffc048', icon: '💣➕', damage: 8, isHybrid: true, isSynergy: 2 },
-  HYBRID_GENERIC: { id: 'HYBRID_GENERIC', name: '하이브리드 융합공', grade: 'SSR', color: '#ffdd59', icon: '✨🔮', damage: 3, isHybrid: true, isSynergy: 2 }
+  FIRE_BOMB: { id: 'FIRE_BOMB', name: '하이브리드 화염폭탄공', grade: 'SSR', color: '#ff3f34', icon: '💥🔥', damage: 6, desc: '타격 6뎀 + 인접 블록 6개 3뎀 대형 화염 폭발', isHybrid: true, isSynergy: 2 },
+  ELEC_ROW: { id: 'ELEC_ROW', name: '하이브리드 전격가로공', grade: 'SSR', color: '#00d8d6', icon: '⚡↔️', damage: 2, desc: '가로 전체 2뎀 레이저 + 피격 주변 1뎀 감전 전이', isHybrid: true, isSynergy: 2 },
+  ELEC_COL: { id: 'ELEC_COL', name: '하이브리드 전격세로공', grade: 'SSR', color: '#0be881', icon: '⚡↕️', damage: 2, desc: '세로 전체 2뎀 레이저 + 피격 주변 1뎀 감전 전이', isHybrid: true, isSynergy: 2 },
+  DIFFUSE_CROSS: { id: 'DIFFUSE_CROSS', name: '하이브리드 난반사십자공', grade: 'SSR', color: '#ef5777', icon: '🌀➕', damage: 2, desc: '난반사 궤적으로 튕기며 매 적중 시 2뎀 십자 빔', isHybrid: true, isSynergy: 2 },
+  PLASMA: { id: 'PLASMA', name: '하이브리드 플라즈마공', grade: 'SSR', color: '#ff5e57', icon: '⚡🔥', damage: 3, desc: '타격 3뎀 + 주변 모든 인접 블록 3뎀 플라즈마 폭발', isHybrid: true, isSynergy: 2 },
+  BOMB_CROSS: { id: 'BOMB_CROSS', name: '하이브리드 폭발십자공', grade: 'SSR', color: '#ffc048', icon: '💣➕', damage: 8, desc: '타격 8뎀 + 가로/세로 전체 4뎀 폭발 레이저', isHybrid: true, isSynergy: 2 },
+  HYBRID_GENERIC: { id: 'HYBRID_GENERIC', name: '하이브리드 융합공', grade: 'SSR', color: '#ffdd59', icon: '✨🔮', damage: 3, desc: '타격 3뎀 + 인접 블록 4개 2뎀 만능 방전', isHybrid: true, isSynergy: 2 }
 };
 
 const BRICK_TYPES = {
@@ -427,6 +427,15 @@ function setupEventListeners() {
         btnSkill.click();
       }
     }
+    if (e.code === 'KeyZ' || e.key === 'z' || e.key === 'Z') {
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        return;
+      }
+      e.preventDefault();
+      if (!state.isShooting) {
+        advanceWave();
+      }
+    }
     if (e.code === 'Space' || e.key === ' ') {
       e.preventDefault();
       sounds.init();
@@ -488,13 +497,9 @@ function setupEventListeners() {
   document.getElementById('btnOpenShop').addEventListener('click', () => openModal('modalShop'));
   
   document.getElementById('btnOpenFusion').addEventListener('click', () => {
-    currentFusionMode = 'same';
-    switchFusionTab('same');
+    renderFusionList();
     openModal('modalFusion');
   });
-
-  document.getElementById('btnTabSameFusion').addEventListener('click', () => switchFusionTab('same'));
-  document.getElementById('btnTabHybridFusion').addEventListener('click', () => switchFusionTab('hybrid'));
 
   document.getElementById('btnFuseAll').addEventListener('click', fuseAllBalls);
   const btnHybridAll = document.getElementById('btnFuseAllHybrid');
@@ -670,7 +675,7 @@ function updatePhysics() {
       // Barrier Collision
       if (state.barrierActive && ball.vy > 0 && !state.isRecalling) {
         const barrierY = state.launchPos.y - 70;
-        const barrierWidth = canvas.width / 4;
+        const barrierWidth = (canvas.width / 4) * 1.3;
         const barrierX1 = state.barrierX - barrierWidth / 2;
         const barrierX2 = state.barrierX + barrierWidth / 2;
 
@@ -1030,32 +1035,7 @@ function buyBalls(count) {
   updateHUD();
 }
 
-// --- Fusion System: Tabs & In-Place Cross-Element Hybrid Fusion ---
-function switchFusionTab(mode) {
-  currentFusionMode = mode;
-  const btnSame = document.getElementById('btnTabSameFusion');
-  const btnHybrid = document.getElementById('btnTabHybridFusion');
-  const descText = document.getElementById('fusionDescText');
-  const btnFuseAll = document.getElementById('btnFuseAll');
-  const btnFuseAllHybrid = document.getElementById('btnFuseAllHybrid');
-
-  if (mode === 'same') {
-    btnSame.style.opacity = '1';
-    btnHybrid.style.opacity = '0.5';
-    descText.innerText = '동일한 공 2개를 조합하여 +1(★) 및 +2(★★) 강화를 진행합니다.';
-    btnFuseAll.style.display = 'inline-block';
-    if (btnFuseAllHybrid) btnFuseAllHybrid.style.display = 'none';
-    renderFusionList();
-  } else {
-    btnSame.style.opacity = '0.5';
-    btnHybrid.style.opacity = '1';
-    descText.innerText = '서로 다른 종류의 공 2개를 융합하여 강력한 하이브리드 시너지공을 창조합니다.';
-    btnFuseAll.style.display = 'none';
-    if (btnFuseAllHybrid) btnFuseAllHybrid.style.display = 'inline-block';
-    renderHybridFusionList();
-  }
-}
-
+// --- Fusion System: Single-Screen Unified Fusion (Same & Hybrid) ---
 function getHybridBall(id1, id2) {
   const set = new Set([id1, id2]);
   if (set.has('FIRE') && set.has('BOMB')) return BALL_TYPES.FIRE_BOMB;
@@ -1069,90 +1049,117 @@ function getHybridBall(id1, id2) {
 
 function renderFusionList() {
   const container = document.getElementById('fusionList');
+  if (!container) return;
   container.innerHTML = '';
 
-  const counts = {};
+  // 1. 동종 강화 조합 (Same-Type Merge)
+  const sameSection = document.createElement('div');
+  sameSection.className = 'fusion-section';
+  sameSection.innerHTML = `
+    <div style="font-size:0.88rem; font-weight:800; color:#ffd166; padding:4px 0 8px 0; border-bottom:1px solid rgba(255,255,255,0.1); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+      <span>🌟 동종 강화 조합</span>
+      <span style="font-size:0.75rem; font-weight:400; color:#a0aec0;">(동일한 공 2개 강화)</span>
+    </div>
+  `;
+
+  const countsSame = {};
   for (let b of state.ownedBalls) {
     if (b.synergyId) {
-      counts[b.id] = (counts[b.id] || 0) + 1;
+      countsSame[b.id] = (countsSame[b.id] || 0) + 1;
     }
   }
 
-  const fusableIds = Object.keys(counts).filter(id => counts[id] >= 2);
+  const fusableIds = Object.keys(countsSame).filter(id => countsSame[id] >= 2);
 
   if (fusableIds.length === 0) {
-    container.innerHTML = `<p style="font-size:0.85rem; color:#a0aec0; text-align:center; padding:15px;">조합 가능한 동일한 공(2개 이상)이 없습니다.</p>`;
-    return;
+    sameSection.innerHTML += `<p style="font-size:0.78rem; color:#a0aec0; padding:8px 0; text-align:center;">조합 가능한 동일한 공(2개 이상)이 없습니다.</p>`;
+  } else {
+    const listDiv = document.createElement('div');
+    listDiv.style.display = 'flex';
+    listDiv.style.flexDirection = 'column';
+    listDiv.style.gap = '8px';
+
+    fusableIds.forEach(id => {
+      const baseBall = BALL_TYPES[id];
+      const synBall = BALL_TYPES[baseBall.synergyId];
+
+      const item = document.createElement('div');
+      item.className = 'talent-item';
+      item.innerHTML = `
+        <div class="talent-info">
+          <h4>${baseBall.icon} ${baseBall.name} ➔ ${synBall.icon} ${synBall.name}</h4>
+          <p style="color:#ffd166; font-weight:600; margin-top:2px;">✨ 효과: ${synBall.desc || `데미지 ${synBall.damage}`}</p>
+        </div>
+        <button class="btn-upgrade btn-fuse" onclick="fuseBalls('${id}')">
+          조합하기
+        </button>
+      `;
+      listDiv.appendChild(item);
+    });
+    sameSection.appendChild(listDiv);
   }
+  container.appendChild(sameSection);
 
-  fusableIds.forEach(id => {
-    const baseBall = BALL_TYPES[id];
-    const synBall = BALL_TYPES[baseBall.synergyId];
-    const availablePairs = Math.floor(counts[id] / 2);
+  // 2. 이종 융합 조합 (Hybrid Merge)
+  const hybridSection = document.createElement('div');
+  hybridSection.className = 'fusion-section';
+  hybridSection.style.marginTop = '16px';
+  hybridSection.innerHTML = `
+    <div style="font-size:0.88rem; font-weight:800; color:#ff7979; padding:4px 0 8px 0; border-bottom:1px solid rgba(255,255,255,0.1); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+      <span>🧪 이종 융합 조합</span>
+      <span style="font-size:0.75rem; font-weight:400; color:#a0aec0;">(서로 다른 공 2개 융합)</span>
+    </div>
+  `;
 
-    const item = document.createElement('div');
-    item.className = 'talent-item';
-    item.innerHTML = `
-      <div class="talent-info">
-        <h4>${baseBall.icon} ${baseBall.name} 2개 ➔ ${synBall.icon} ${synBall.name}</h4>
-        <p>조합 가능: ${availablePairs}회 (보유: ${counts[id]}개)</p>
-      </div>
-      <button class="btn-upgrade btn-fuse" onclick="fuseBalls('${id}')">
-        조합하기
-      </button>
-    `;
-    container.appendChild(item);
-  });
-}
-
-function renderHybridFusionList() {
-  const container = document.getElementById('fusionList');
-  container.innerHTML = '';
-
-  const baseTypes = Object.values(BALL_TYPES).filter(t => !t.isSynergy && !t.isHybrid);
-  const counts = {};
+  const countsBase = {};
   for (let b of state.ownedBalls) {
     if (!b.isSynergy && !b.isHybrid) {
-      counts[b.id] = (counts[b.id] || 0) + 1;
+      countsBase[b.id] = (countsBase[b.id] || 0) + 1;
     }
   }
 
-  const availableBaseIds = Object.keys(counts).filter(id => counts[id] >= 1);
+  const availableBaseIds = Object.keys(countsBase).filter(id => countsBase[id] >= 1);
   const hybridPairs = [];
 
   for (let i = 0; i < availableBaseIds.length; i++) {
     for (let j = i + 1; j < availableBaseIds.length; j++) {
       const id1 = availableBaseIds[i];
       const id2 = availableBaseIds[j];
-      if (counts[id1] >= 1 && counts[id2] >= 1) {
+      if (countsBase[id1] >= 1 && countsBase[id2] >= 1) {
         hybridPairs.push({ id1, id2, result: getHybridBall(id1, id2) });
       }
     }
   }
 
   if (hybridPairs.length === 0) {
-    container.innerHTML = `<p style="font-size:0.85rem; color:#a0aec0; text-align:center; padding:15px;">융합 가능한 서로 다른 기본 공 종류가 부족합니다. (상점에서 다양한 공을 뽑아보세요!)</p>`;
-    return;
+    hybridSection.innerHTML += `<p style="font-size:0.78rem; color:#a0aec0; padding:8px 0; text-align:center;">융합 가능한 서로 다른 기본 공 종류가 부족합니다.</p>`;
+  } else {
+    const listDiv = document.createElement('div');
+    listDiv.style.display = 'flex';
+    listDiv.style.flexDirection = 'column';
+    listDiv.style.gap = '8px';
+
+    hybridPairs.forEach(pair => {
+      const b1 = BALL_TYPES[pair.id1];
+      const b2 = BALL_TYPES[pair.id2];
+      const res = pair.result;
+
+      const item = document.createElement('div');
+      item.className = 'talent-item';
+      item.innerHTML = `
+        <div class="talent-info">
+          <h4>${b1.icon} ${b1.name} + ${b2.icon} ${b2.name} ➔ ${res.icon} ${res.name}</h4>
+          <p style="color:#ff7979; font-weight:600; margin-top:2px;">🧪 효과: ${res.desc || `데미지 ${res.damage}`}</p>
+        </div>
+        <button class="btn-upgrade btn-fuse" style="background:linear-gradient(135deg, #eb4d4b, #ff7979);" onclick="fuseHybridBalls('${pair.id1}', '${pair.id2}')">
+          🧪 융합하기
+        </button>
+      `;
+      listDiv.appendChild(item);
+    });
+    hybridSection.appendChild(listDiv);
   }
-
-  hybridPairs.forEach(pair => {
-    const b1 = BALL_TYPES[pair.id1];
-    const b2 = BALL_TYPES[pair.id2];
-    const res = pair.result;
-
-    const item = document.createElement('div');
-    item.className = 'talent-item';
-    item.innerHTML = `
-      <div class="talent-info">
-        <h4>${b1.icon} ${b1.name} + ${b2.icon} ${b2.name} ➔ ${res.icon} ${res.name}</h4>
-        <p>데미지 ${res.damage} | 특수 융합 시너지 발동</p>
-      </div>
-      <button class="btn-upgrade btn-fuse" style="background:linear-gradient(135deg, #eb4d4b, #ff7979);" onclick="fuseHybridBalls('${pair.id1}', '${pair.id2}')">
-        🧪 융합하기
-      </button>
-    `;
-    container.appendChild(item);
-  });
+  container.appendChild(hybridSection);
 }
 
 // In-Place Same-Type Fusion
@@ -1204,7 +1211,6 @@ window.fuseHybridBalls = function(id1, id2) {
 
   const hybridBall = getHybridBall(id1, id2);
   
-  // Replace smaller index in-place, splice larger index
   const minIdx = Math.min(idx1, idx2);
   const maxIdx = Math.max(idx1, idx2);
 
@@ -1215,7 +1221,7 @@ window.fuseHybridBalls = function(id1, id2) {
   createFloatingText(canvas.width / 2, canvas.height / 2, `🧪 이종 융합 성공: ${hybridBall.name}!`, hybridBall.color);
 
   updateHUD();
-  renderHybridFusionList();
+  renderFusionList();
 };
 
 function fuseAllBalls() {
@@ -1282,7 +1288,7 @@ function fuseAllHybridBalls() {
   }
 
   updateHUD();
-  renderHybridFusionList();
+  renderFusionList();
 }
 
 // --- Talents System ---
@@ -1790,7 +1796,7 @@ function drawBarrier() {
 
   ctx.save();
   const barrierY = state.launchPos.y - 70;
-  const barrierWidth = canvas.width / 4;
+  const barrierWidth = (canvas.width / 4) * 1.3;
   const barrierX1 = state.barrierX - barrierWidth / 2;
   const barrierX2 = state.barrierX + barrierWidth / 2;
 
