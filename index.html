@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ISLAND BREAKER - 벽돌깨기</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+</head>
+<body>
+  <div id="app-container">
+    <!-- Top Header -->
+    <header class="game-header">
+      <div class="title-badge">
+        <span style="font-size:1.3rem;">🏖️</span>
+        <h1>ISLAND BREAKER</h1>
+      </div>
+      <div class="stats-group">
+        <div class="stat-box score-box">
+          <span class="icon">⭐</span>
+          <span id="scoreText">0</span>
+        </div>
+        <div class="stat-box shell-box">
+          <span class="icon">🐚</span>
+          <span id="shellText">0</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Sub HUD: Wave & Quick Actions -->
+    <div class="sub-hud">
+      <div class="wave-display">
+        <div class="wave-pill">WAVE <span id="waveText">1</span></div>
+        <div style="display:flex; align-items:center; gap:4px; margin-left:4px; font-size:0.75rem;">
+          <span style="color:#a0aec0;">시작WAVE:</span>
+          <input type="number" id="inputStartWave" min="1" max="999" value="1" title="시작 WAVE 지정" style="width:48px; background:rgba(255,255,255,0.15); color:#ffd166; border:1px solid rgba(255,255,255,0.3); border-radius:6px; text-align:center; font-weight:800; padding:2px 4px;">
+        </div>
+      </div>
+      <div class="hud-actions">
+        <button id="btnSoundToggle" class="btn-hud">🔊 소리 ON</button>
+        <button id="btnSpeed" class="btn-hud">⏩ 2x</button>
+        <button id="btnSkipWave" class="btn-hud">⏭️ WAVE 넘기기</button>
+        <button id="btnRecall" class="btn-hud btn-recall" title="단축키: Space (발사/회수), ◀▶ (방향조절)">🚀 발사/회수 (Space / ◀▶)</button>
+        <button id="btnSkill" class="btn-hud btn-skill" title="스킬 사용 (단축키: E): 발사지점 위에 공을 튕겨내는 방어벽을 설치합니다.">🛡️ 방어벽 (0%)</button>
+      </div>
+    </div>
+
+    <!-- Canvas Game View -->
+    <main class="canvas-wrapper">
+      <canvas id="gameCanvas"></canvas>
+    </main>
+
+    <!-- Bottom Action Bar (Shop, Fusion, Talents, Balls Inventory) -->
+    <footer class="bottom-panel">
+      <div class="bottom-actions">
+        <div id="ballsInventory" class="balls-inventory-preview">
+          <!-- Dynamic Ball Tags populated by JS -->
+        </div>
+        <div class="action-buttons">
+          <button id="btnOpenShop" class="btn-main shop-btn">🛒 공 구매</button>
+          <button id="btnOpenFusion" class="btn-main fusion-btn">🧬 공 조합</button>
+          <button id="btnOpenTalent" class="btn-main talent-btn">✨ 특성</button>
+        </div>
+      </div>
+    </footer>
+
+    <!-- MODAL: Ball Shop & Bonus Brick Guide -->
+    <div id="modalShop" class="modal-overlay">
+      <div class="modal-card" style="max-width:480px;">
+        <div class="modal-header">
+          <div class="modal-title"><span>🛒</span> 공 상점 & 블록 도감</div>
+          <button class="btn-close" onclick="closeModal('modalShop')">&times;</button>
+        </div>
+        <div class="gacha-box-container">
+          <div class="gacha-card">
+            <div class="gacha-icon">🔮</div>
+            <div class="gacha-title">1회 뽑기</div>
+            <div class="gacha-price">🐚 40 조개</div>
+            <button id="btnBuy1" class="btn-gacha">구매하기</button>
+          </div>
+          <div class="gacha-card">
+            <div class="gacha-icon">🎁</div>
+            <div class="gacha-title">6회 뽑기</div>
+            <div class="gacha-price">🐚 220 조개</div>
+            <button id="btnBuy6" class="btn-gacha">구매하기</button>
+          </div>
+          <div class="gacha-card">
+            <div class="gacha-icon">📦</div>
+            <div class="gacha-title">24회 연속 뽑기</div>
+            <div class="gacha-price">🐚 800 조개 (대할인)</div>
+            <button id="btnBuy24" class="btn-gacha" style="background:linear-gradient(135deg, #9b59b6, #8e44ad);">구매하기</button>
+          </div>
+          <div class="gacha-card">
+            <div class="gacha-icon">👑</div>
+            <div class="gacha-title">64회 연속 뽑기</div>
+            <div class="gacha-price">🐚 2,000 조개 (최대할인)</div>
+            <button id="btnBuy64" class="btn-gacha" style="background:linear-gradient(135deg, #f1c40f, #e67e22);">구매하기</button>
+          </div>
+        </div>
+
+        <div style="font-weight:700; font-size:0.85rem; color:#ffd166; margin-top:8px;">🎁 2가지 특수 보너스 블록 종류 & 충돌 효과 안내</div>
+        <div class="ball-rates-list" style="margin-top:4px;">
+          <div class="ball-rate-item"><span style="color:#ff6b6b;">💥 광역 폭발 보너스 블록</span><span>충돌할 때마다 인접 3x3 전체 5 데미지 폭발</span></div>
+          <div class="ball-rate-item"><span style="color:#00d2ff;">⚡ 전격 벼락 보너스 블록</span><span>충돌할 때마다 화면 전체 모든 블록 1뎀 벼락</span></div>
+        </div>
+
+        <div style="font-weight:700; font-size:0.85rem; color:#64dfdf; margin-top:8px;">공 출현 리스트 (8종 출현 확률 동일)</div>
+        <div class="ball-rates-list" style="margin-top:4px;">
+          <div class="ball-rate-item"><span>🔵 기본공 (R)</span><span>1 데미지</span></div>
+          <div class="ball-rate-item"><span>🌀 난반사공 (SR)</span><span>1 데미지 + 블록 충돌시 랜덤 반사각</span></div>
+          <div class="ball-rate-item"><span>➕ 십자파괴공 (SSR)</span><span>1 데미지 + 상하좌우 전체 1뎀</span></div>
+          <div class="ball-rate-item"><span>↔️ 가로파괴공 (SR)</span><span>1 데미지 + 좌우 전체 1뎀</span></div>
+          <div class="ball-rate-item"><span>↕️ 세로파괴공 (SR)</span><span>1 데미지 + 상하 전체 1뎀</span></div>
+          <div class="ball-rate-item"><span>💣 폭탄공 (SSR)</span><span>5 강력 데미지</span></div>
+          <div class="ball-rate-item"><span>🔥 화염공 (SR)</span><span>1 데미지 + 인접 3개 랜덤 1뎀</span></div>
+          <div class="ball-rate-item"><span>⚡ 전기공 (SR)</span><span>1 데미지 + 인접 3개 랜덤 1뎀</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Ball Fusion / Merge -->
+    <div id="modalFusion" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-title"><span>🧬</span> 공 조합 및 융합 연구소</div>
+          <button class="btn-close" onclick="closeModal('modalFusion')">&times;</button>
+        </div>
+        <div style="display:flex; gap:6px; margin-top:6px; margin-bottom:6px;">
+          <button id="btnTabSameFusion" class="btn-hud" style="flex:1; background:linear-gradient(135deg, #4834d4, #686de0);">🌟 동종 강화 조합</button>
+          <button id="btnTabHybridFusion" class="btn-hud" style="flex:1; background:linear-gradient(135deg, #eb4d4b, #ff7979);">🧪 이종 융합 조합</button>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <p id="fusionDescText" style="font-size:0.78rem; color:#a0aec0;">동일한 공 2개를 조합하여 +1(★) 및 +2(★★) 강화를 진행합니다.</p>
+          <button id="btnFuseAll" style="background:linear-gradient(135deg, #ff9f43, #ee5253); border:none; color:white; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.78rem; cursor:pointer; white-space:nowrap;">⚡ 모두 동종 조합</button>
+          <button id="btnFuseAllHybrid" style="background:linear-gradient(135deg, #eb4d4b, #ff7979); border:none; color:white; padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.78rem; cursor:pointer; white-space:nowrap; display:none;">🧪 모두 이종 융합</button>
+        </div>
+        <div id="fusionList" class="talent-list" style="margin-top:10px;"></div>
+      </div>
+    </div>
+
+    <!-- MODAL: Talent / Upgrade Tree -->
+    <div id="modalTalent" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-title"><span>✨</span> 특성 연구소</div>
+          <button class="btn-close" onclick="closeModal('modalTalent')">&times;</button>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+          <span>보유 특성 포인트: <strong id="talentPointText" style="color:#ffd166;">0</strong> TP</span>
+          <button id="btnResetTalents" style="background:none; border:1px solid rgba(255,255,255,0.2); color:#ff6b81; border-radius:6px; padding:2px 8px; cursor:pointer; font-size:0.75rem;">초기화</button>
+        </div>
+        <div id="talentList" class="talent-list">
+          <!-- Dynamic Talent List -->
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Game Over -->
+    <div id="modalGameOver" class="modal-overlay">
+      <div class="modal-card gameover-box">
+        <div class="gameover-title">GAME OVER</div>
+        <p style="font-size:0.9rem; color:#a0aec0;">잔해물이 방어선까지 밀려왔습니다!</p>
+        <div class="result-stat">최종 도달 WAVE: <span id="finalWaveText" class="result-highlight">1</span></div>
+        <div class="result-stat">최종 점수: <span id="finalScoreText" class="result-highlight">0</span></div>
+        <div class="result-stat">획득한 특성 재화: <span id="earnedTPText" class="result-highlight">+0 TP</span></div>
+        <button id="btnRestart" class="btn-restart">다시 도전하기 🔄</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
