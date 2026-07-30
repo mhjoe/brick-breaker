@@ -1189,184 +1189,208 @@ function getHybridBall(id1, id2) {
   return BALL_TYPES.HYBRID_GENERIC;
 }
 
+function getCraftableCount(resId) {
+  const resBall = BALL_TYPES[resId];
+  if (!resBall) return 0;
+
+  if (resBall.isSuper) {
+    if (resId === 'GOD_PULSE') {
+      const hybrids = state.ownedBalls.filter(b => b.isHybrid).length;
+      return Math.floor(hybrids / 2);
+    } else {
+      const highCount = state.ownedBalls.filter(b => b.isSynergy === 2 || b.isHybrid).length;
+      return Math.floor(highCount / 2);
+    }
+  } else if (resBall.isHybrid) {
+    const hybridReqs = {
+      FIRE_BOMB: ['FIRE', 'BOMB'],
+      ELEC_ROW: ['ELEC', 'ROW'],
+      ELEC_COL: ['ELEC', 'COL'],
+      DIFFUSE_CROSS: ['DIFFUSE', 'CROSS'],
+      PLASMA: ['FIRE', 'ELEC'],
+      BOMB_CROSS: ['BOMB', 'CROSS']
+    };
+    const req = hybridReqs[resId];
+    if (req) {
+      const c1 = state.ownedBalls.filter(b => b.id === req[0]).length;
+      const c2 = state.ownedBalls.filter(b => b.id === req[1]).length;
+      return Math.min(c1, c2);
+    } else if (resId === 'HYBRID_GENERIC') {
+      const baseCounts = {};
+      state.ownedBalls.forEach(b => {
+        if (!b.isSynergy && !b.isHybrid) baseCounts[b.id] = (baseCounts[b.id] || 0) + 1;
+      });
+      const keys = Object.keys(baseCounts);
+      let pairs = 0;
+      for (let i = 0; i < keys.length; i++) {
+        for (let j = i + 1; j < keys.length; j++) {
+          pairs += Math.min(baseCounts[keys[i]], baseCounts[keys[j]]);
+        }
+      }
+      return pairs;
+    }
+  } else if (resBall.isSynergy) {
+    const baseId = Object.keys(BALL_TYPES).find(id => BALL_TYPES[id].synergyId === resId);
+    if (baseId) {
+      const count = state.ownedBalls.filter(b => b.id === baseId).length;
+      return Math.floor(count / 2);
+    }
+  }
+  return 0;
+}
+
+window.craftResultBall = function(resId) {
+  const resBall = BALL_TYPES[resId];
+  if (!resBall) return;
+
+  let firstIdx = -1;
+  let secondIdx = -1;
+
+  if (resBall.isSuper) {
+    if (resId === 'GOD_PULSE') {
+      for (let i = 0; i < state.ownedBalls.length; i++) {
+        if (state.ownedBalls[i].isHybrid) {
+          if (firstIdx === -1) firstIdx = i;
+          else { secondIdx = i; break; }
+        }
+      }
+    } else {
+      for (let i = 0; i < state.ownedBalls.length; i++) {
+        if (state.ownedBalls[i].isSynergy === 2 || state.ownedBalls[i].isHybrid) {
+          if (firstIdx === -1) firstIdx = i;
+          else { secondIdx = i; break; }
+        }
+      }
+    }
+  } else if (resBall.isHybrid) {
+    const hybridReqs = {
+      FIRE_BOMB: ['FIRE', 'BOMB'],
+      ELEC_ROW: ['ELEC', 'ROW'],
+      ELEC_COL: ['ELEC', 'COL'],
+      DIFFUSE_CROSS: ['DIFFUSE', 'CROSS'],
+      PLASMA: ['FIRE', 'ELEC'],
+      BOMB_CROSS: ['BOMB', 'CROSS']
+    };
+    const req = hybridReqs[resId];
+    if (req) {
+      for (let i = 0; i < state.ownedBalls.length; i++) {
+        if (state.ownedBalls[i].id === req[0] && firstIdx === -1) firstIdx = i;
+        else if (state.ownedBalls[i].id === req[1] && secondIdx === -1) secondIdx = i;
+      }
+    } else {
+      for (let i = 0; i < state.ownedBalls.length; i++) {
+        const b = state.ownedBalls[i];
+        if (!b.isSynergy && !b.isHybrid) {
+          if (firstIdx === -1) firstIdx = i;
+          else if (b.id !== state.ownedBalls[firstIdx].id) { secondIdx = i; break; }
+        }
+      }
+    }
+  } else if (resBall.isSynergy) {
+    const baseId = Object.keys(BALL_TYPES).find(id => BALL_TYPES[id].synergyId === resId);
+    if (baseId) {
+      for (let i = 0; i < state.ownedBalls.length; i++) {
+        if (state.ownedBalls[i].id === baseId) {
+          if (firstIdx === -1) firstIdx = i;
+          else { secondIdx = i; break; }
+        }
+      }
+    }
+  }
+
+  if (firstIdx === -1 || secondIdx === -1) return;
+
+  const minIdx = Math.min(firstIdx, secondIdx);
+  const maxIdx = Math.max(firstIdx, secondIdx);
+
+  state.ownedBalls[minIdx] = resBall;
+  state.ownedBalls.splice(maxIdx, 1);
+
+  sounds.playExplosion();
+  createFloatingText(canvas.width / 2, canvas.height / 2, `✨ 조합 성공: ${resBall.name}!`, resBall.color);
+
+  updateHUD();
+  renderFusionList();
+};
+
 function renderFusionList() {
   const container = document.getElementById('fusionList');
   if (!container) return;
   container.innerHTML = '';
 
-  // 1. 동종 강화 조합 (Same-Type Merge)
-  const sameSection = document.createElement('div');
-  sameSection.className = 'fusion-section';
-  sameSection.innerHTML = `
-    <div style="font-size:0.88rem; font-weight:800; color:#ffd166; padding:4px 0 8px 0; border-bottom:1px solid rgba(255,255,255,0.1); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-      <span>🌟 동종 강화 조합</span>
-      <span style="font-size:0.75rem; font-weight:400; color:#a0aec0;">(동일한 공 2개 강화)</span>
+  const sameResultIds = Object.keys(BALL_TYPES).filter(id => BALL_TYPES[id].isSynergy && !BALL_TYPES[id].isSuper && !BALL_TYPES[id].isHybrid);
+  const hybridResultIds = Object.keys(BALL_TYPES).filter(id => BALL_TYPES[id].isHybrid);
+  const superResultIds = Object.keys(BALL_TYPES).filter(id => BALL_TYPES[id].isSuper);
+
+  renderResultCategory(container, '🌟 동종 강화 조합 결과', sameResultIds, '#ffd166');
+  renderResultCategory(container, '🧪 이종 융합 조합 결과', hybridResultIds, '#ff7979');
+  renderResultCategory(container, '👑 초강력 시너지 융합 결과 (UR 등급)', superResultIds, '#ff3838', true);
+}
+
+function renderResultCategory(container, titleText, resultIds, titleColor, isSuperCategory = false) {
+  const section = document.createElement('div');
+  section.className = 'fusion-section';
+  if (container.children.length > 0) section.style.marginTop = '16px';
+
+  section.innerHTML = `
+    <div style="font-size:0.88rem; font-weight:800; color:${titleColor}; padding:4px 0 8px 0; border-bottom:1px solid rgba(255,255,255,0.1); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+      <span>${titleText}</span>
+      <span style="font-size:0.75rem; font-weight:400; color:#a0aec0;">(제작 가능한 공 기준 표시)</span>
     </div>
   `;
 
-  const countsSame = {};
-  for (let b of state.ownedBalls) {
-    if (b.synergyId) {
-      countsSame[b.id] = (countsSame[b.id] || 0) + 1;
-    }
-  }
+  let craftableCountTotal = 0;
+  const listDiv = document.createElement('div');
+  listDiv.style.display = 'flex';
+  listDiv.style.flexDirection = 'column';
+  listDiv.style.gap = '8px';
 
-  const fusableIds = Object.keys(countsSame).filter(id => countsSame[id] >= 2);
-
-  if (fusableIds.length === 0) {
-    sameSection.innerHTML += `<p style="font-size:0.78rem; color:#a0aec0; padding:8px 0; text-align:center;">조합 가능한 동일한 공(2개 이상)이 없습니다.</p>`;
-  } else {
-    const listDiv = document.createElement('div');
-    listDiv.style.display = 'flex';
-    listDiv.style.flexDirection = 'column';
-    listDiv.style.gap = '8px';
-
-    fusableIds.forEach(id => {
-      const baseBall = BALL_TYPES[id];
-      const synBall = BALL_TYPES[baseBall.synergyId];
+  resultIds.forEach(resId => {
+    const craftableCount = getCraftableCount(resId);
+    if (craftableCount > 0) {
+      craftableCountTotal += craftableCount;
+      const resBall = BALL_TYPES[resId];
 
       const item = document.createElement('div');
       item.className = 'talent-item';
+      if (isSuperCategory) {
+        item.style.border = '1px dashed rgba(255, 56, 56, 0.6)';
+        item.style.background = 'linear-gradient(135deg, rgba(255,56,56,0.12), rgba(255,175,64,0.12))';
+      }
+
+      let superBadge = '';
+      if (isSuperCategory) {
+        superBadge = `
+          <div style="background:linear-gradient(90deg, #ff3838, #ffaf40); color:white; font-size:0.72rem; font-weight:800; padding:3px 8px; border-radius:4px; margin-top:5px; display:inline-block;">
+            👑 [초강력공 차이점] 25~30 압도적 데미지 + 화면 전체 4중 폭발 & 파멸 시너지 발동!
+          </div>
+        `;
+      }
+
       item.innerHTML = `
-        <div class="talent-info">
-          <h4>${baseBall.icon} ${baseBall.name} ➔ ${synBall.icon} ${synBall.name}</h4>
-          <p style="color:#ffd166; font-weight:600; margin-top:2px;">✨ 효과: ${synBall.desc || `데미지 ${synBall.damage}`}</p>
+        <div class="talent-info" style="flex:1;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <h4 style="margin:0;">${resBall.icon} ${resBall.name} <span style="font-size:0.75rem; opacity:0.8;">[${resBall.grade}]</span></h4>
+            <span style="background:rgba(255,209,102,0.25); color:#ffd166; font-size:0.75rem; font-weight:800; padding:2px 8px; border-radius:10px;">제작 가능: ${craftableCount}개</span>
+          </div>
+          <p style="color:#e0e0e0; font-size:0.8rem; font-weight:600; margin-top:4px; margin-bottom:0;">✨ 특수 효과: ${resBall.desc}</p>
+          ${superBadge}
         </div>
-        <button class="btn-upgrade btn-fuse" onclick="fuseBalls('${id}')">
+        <button class="btn-upgrade btn-fuse" style="margin-left:8px; ${isSuperCategory ? 'background:linear-gradient(135deg, #ff3838, #ffaf40);' : ''}" onclick="craftResultBall('${resId}')">
           조합하기
         </button>
       `;
       listDiv.appendChild(item);
-    });
-    sameSection.appendChild(listDiv);
-  }
-  container.appendChild(sameSection);
-
-  // 2. 이종 융합 조합 (Hybrid Merge)
-  const hybridSection = document.createElement('div');
-  hybridSection.className = 'fusion-section';
-  hybridSection.style.marginTop = '16px';
-  hybridSection.innerHTML = `
-    <div style="font-size:0.88rem; font-weight:800; color:#ff7979; padding:4px 0 8px 0; border-bottom:1px solid rgba(255,255,255,0.1); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-      <span>🧪 이종 융합 조합</span>
-      <span style="font-size:0.75rem; font-weight:400; color:#a0aec0;">(서로 다른 공 2개 융합)</span>
-    </div>
-  `;
-
-  const countsBase = {};
-  for (let b of state.ownedBalls) {
-    if (!b.isSynergy && !b.isHybrid) {
-      countsBase[b.id] = (countsBase[b.id] || 0) + 1;
     }
-  }
+  });
 
-  const availableBaseIds = Object.keys(countsBase).filter(id => countsBase[id] >= 1);
-  const hybridPairs = [];
-
-  for (let i = 0; i < availableBaseIds.length; i++) {
-    for (let j = i + 1; j < availableBaseIds.length; j++) {
-      const id1 = availableBaseIds[i];
-      const id2 = availableBaseIds[j];
-      if (countsBase[id1] >= 1 && countsBase[id2] >= 1) {
-        hybridPairs.push({ id1, id2, result: getHybridBall(id1, id2) });
-      }
-    }
-  }
-
-  if (hybridPairs.length === 0) {
-    hybridSection.innerHTML += `<p style="font-size:0.78rem; color:#a0aec0; padding:8px 0; text-align:center;">융합 가능한 서로 다른 기본 공 종류가 부족합니다.</p>`;
+  if (craftableCountTotal === 0) {
+    section.innerHTML += `<p style="font-size:0.78rem; color:#a0aec0; padding:8px 0; text-align:center;">현재 보유한 재료로 제작 가능한 공이 없습니다.</p>`;
   } else {
-    const listDiv = document.createElement('div');
-    listDiv.style.display = 'flex';
-    listDiv.style.flexDirection = 'column';
-    listDiv.style.gap = '8px';
-
-    hybridPairs.forEach(pair => {
-      const b1 = BALL_TYPES[pair.id1];
-      const b2 = BALL_TYPES[pair.id2];
-      const res = pair.result;
-
-      const item = document.createElement('div');
-      item.className = 'talent-item';
-      item.innerHTML = `
-        <div class="talent-info">
-          <h4>${b1.icon} ${b1.name} + ${b2.icon} ${b2.name} ➔ ${res.icon} ${res.name}</h4>
-          <p style="color:#ff7979; font-weight:600; margin-top:2px;">🧪 효과: ${res.desc || `데미지 ${res.damage}`}</p>
-        </div>
-        <button class="btn-upgrade btn-fuse" style="background:linear-gradient(135deg, #eb4d4b, #ff7979);" onclick="fuseHybridBalls('${pair.id1}', '${pair.id2}')">
-          🧪 융합하기
-        </button>
-      `;
-      listDiv.appendChild(item);
-    });
-    hybridSection.appendChild(listDiv);
-  }
-  container.appendChild(hybridSection);
-
-  // 3. 초강력 시너지 융합 (Super Power Merge ★3)
-  const superSection = document.createElement('div');
-  superSection.className = 'fusion-section';
-  superSection.style.marginTop = '16px';
-  superSection.innerHTML = `
-    <div style="font-size:0.88rem; font-weight:800; color:#ff3838; padding:4px 0 8px 0; border-bottom:1px solid rgba(255,255,255,0.1); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-      <span>💥 초강력 시너지 융합</span>
-      <span style="font-size:0.75rem; font-weight:400; color:#a0aec0;">(★2 강화공 또는 하이브리드공 융합)</span>
-    </div>
-  `;
-
-  const countsHigh = {};
-  for (let b of state.ownedBalls) {
-    if (b.isSynergy === 2 || b.isHybrid) {
-      countsHigh[b.id] = (countsHigh[b.id] || 0) + 1;
-    }
+    section.appendChild(listDiv);
   }
 
-  const availableHighIds = Object.keys(countsHigh).filter(id => countsHigh[id] >= 1);
-  const superPairs = [];
-
-  for (let i = 0; i < availableHighIds.length; i++) {
-    for (let j = i; j < availableHighIds.length; j++) {
-      const id1 = availableHighIds[i];
-      const id2 = availableHighIds[j];
-      const req = (id1 === id2) ? 2 : 1;
-      if (countsHigh[id1] >= req && countsHigh[id2] >= 1) {
-        const b1 = BALL_TYPES[id1];
-        const b2 = BALL_TYPES[id2];
-        const res = (b1.isHybrid && b2.isHybrid) ? BALL_TYPES.GOD_PULSE : BALL_TYPES.SUPER_POWER;
-        superPairs.push({ id1, id2, result: res });
-      }
-    }
-  }
-
-  if (superPairs.length === 0) {
-    superSection.innerHTML += `<p style="font-size:0.78rem; color:#a0aec0; padding:8px 0; text-align:center;">초강력 융합에 필요한 ★2 강화공 또는 하이브리드 공이 부족합니다.</p>`;
-  } else {
-    const listDiv = document.createElement('div');
-    listDiv.style.display = 'flex';
-    listDiv.style.flexDirection = 'column';
-    listDiv.style.gap = '8px';
-
-    superPairs.forEach(pair => {
-      const b1 = BALL_TYPES[pair.id1];
-      const b2 = BALL_TYPES[pair.id2];
-      const res = pair.result;
-
-      const item = document.createElement('div');
-      item.className = 'talent-item';
-      item.innerHTML = `
-        <div class="talent-info">
-          <h4>${b1.icon} ${b1.name} + ${b2.icon} ${b2.name} ➔ ${res.icon} ${res.name}</h4>
-          <p style="color:#ff3838; font-weight:700; margin-top:2px;">💥 초강력 효과: ${res.desc}</p>
-        </div>
-        <button class="btn-upgrade btn-fuse" style="background:linear-gradient(135deg, #ff3838, #ffaf40);" onclick="fuseSuperBalls('${pair.id1}', '${pair.id2}')">
-          💥 초강력 융합
-        </button>
-      `;
-      listDiv.appendChild(item);
-    });
-    superSection.appendChild(listDiv);
-  }
-  container.appendChild(superSection);
+  container.appendChild(section);
 }
 
 // In-Place Same-Type Fusion
