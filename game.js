@@ -971,7 +971,6 @@ function applyBallEffect(ball, hitBrick) {
     }
     createFloatingText(bx, by, '🌀⚡💥 갓 플라즈마!', '#ffaf40');
   }
-  }
 
   // --- Regular Abilities ---
   if (ball.type.id.startsWith('CROSS') && ball.type.id !== 'DIFFUSE_CROSS' && ball.type.id !== 'BOMB_CROSS') {
