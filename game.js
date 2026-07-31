@@ -311,10 +311,20 @@ function spawnBrickRow() {
     b.row += 1;
     b.targetY = b.row * cellHeight + 10;
     
-    if (b.targetY + b.h >= defenseLineY) {
-      gameOverTriggered = true;
+    if (b.type !== BRICK_TYPES.UNBREAKABLE && !b.isUnbreakable) {
+      if (b.targetY + b.h >= defenseLineY) {
+        gameOverTriggered = true;
+      }
     }
   }
+
+  // Remove UNBREAKABLE bricks when they reach defense line so they leave board cleanly without game over
+  state.bricks = state.bricks.filter(b => {
+    if (b.type === BRICK_TYPES.UNBREAKABLE || b.isUnbreakable) {
+      return b.targetY < defenseLineY;
+    }
+    return true;
+  });
 
   if (gameOverTriggered) {
     triggerGameOver();
@@ -335,7 +345,7 @@ function spawnBrickRow() {
       y: 10,
       targetY: 10,
       w: cellWidth * 2 - 3,
-      h: cellHeight - 3,
+      h: Math.floor((cellHeight - 3) / 2),
       r: BRICK_CORNER_RADIUS,
       hp: Infinity,
       maxHp: Infinity,
@@ -1766,13 +1776,13 @@ function drawTriangleShape(ctx, x, y, w, h, shape) {
 
 function drawBricks() {
   for (let b of state.bricks) {
-    if (b.type === BRICK_TYPES.UNBREAKABLE) {
+    if (b.type === BRICK_TYPES.UNBREAKABLE || b.isUnbreakable) {
       ctx.save();
       const isFlashing = b.hitFlash > 0;
       if (isFlashing) b.hitFlash--;
 
       ctx.fillStyle = isFlashing ? '#ffffff' : '#2f3640';
-      drawRoundedRect(ctx, b.x, b.y, b.w, b.h, b.r);
+      drawRoundedRect(ctx, b.x, b.y, b.w, b.h, Math.min(b.r, b.h / 2));
       ctx.fill();
 
       ctx.strokeStyle = isFlashing ? '#ffffff' : '#7f8fa6';
@@ -1782,7 +1792,7 @@ function drawBricks() {
       ctx.fillStyle = isFlashing ? '#f5cd79' : '#fbc531';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = '800 13px sans-serif';
+      ctx.font = '800 11px sans-serif';
       ctx.fillText('🛡️ UNBREAKABLE', b.x + b.w / 2, b.y + b.h / 2);
 
       ctx.restore();
