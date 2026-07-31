@@ -1950,26 +1950,41 @@ function drawAimLine() {
     let bouncedThisStep = false;
 
     if (simBall.x - simBall.r <= 0) {
+      const hitX = simBall.r;
+      const hitY = simBall.y;
+      bouncePoints.push({ x: hitX, y: hitY, isBrick: false });
+      points.push({ x: hitX, y: hitY });
+
       simBall.x = simBall.r + 0.1;
       simBall.vx = Math.abs(simBall.vx);
       bouncedThisStep = true;
-      bouncePoints.push({ x: simBall.x, y: simBall.y, isBrick: false });
       bounces++;
     } else if (simBall.x + simBall.r >= canvas.width) {
+      const hitX = canvas.width - simBall.r;
+      const hitY = simBall.y;
+      bouncePoints.push({ x: hitX, y: hitY, isBrick: false });
+      points.push({ x: hitX, y: hitY });
+
       simBall.x = canvas.width - simBall.r - 0.1;
       simBall.vx = -Math.abs(simBall.vx);
       bouncedThisStep = true;
-      bouncePoints.push({ x: simBall.x, y: simBall.y, isBrick: false });
       bounces++;
     }
 
     if (simBall.y - simBall.r <= 0) {
+      const hitX = simBall.x;
+      const hitY = simBall.r;
+      bouncePoints.push({ x: hitX, y: hitY, isBrick: false });
+      points.push({ x: hitX, y: hitY });
+
       simBall.y = simBall.r + 0.1;
       simBall.vy = Math.abs(simBall.vy);
       bouncedThisStep = true;
-      bouncePoints.push({ x: simBall.x, y: simBall.y, isBrick: false });
       bounces++;
     } else if (simBall.y >= canvas.height - 30) {
+      const hitX = simBall.x;
+      const hitY = canvas.height - 30;
+      points.push({ x: hitX, y: hitY });
       break;
     }
 
@@ -1981,6 +1996,13 @@ function drawAimLine() {
         const ny = colRes.ny;
         const dot = simBall.vx * nx + simBall.vy * ny;
 
+        // Record exact contact position on brick surface BEFORE displacement
+        const hitX = simBall.x;
+        const hitY = simBall.y;
+        bouncePoints.push({ x: hitX, y: hitY, isBrick: true });
+        points.push({ x: hitX, y: hitY });
+
+        // Reflect velocity and apply displacement away from brick surface
         simBall.vx = simBall.vx - 2 * dot * nx;
         simBall.vy = simBall.vy - 2 * dot * ny;
         simBall.x += nx * (simBall.r + 1.2);
@@ -1988,7 +2010,6 @@ function drawAimLine() {
         simBall.lastHitBrick = brick;
 
         bouncedThisStep = true;
-        bouncePoints.push({ x: simBall.x, y: simBall.y, isBrick: true });
         brickHits++;
         bounces++;
         break;
@@ -2000,6 +2021,13 @@ function drawAimLine() {
     }
   }
 
+  // Ensure line path finishes at the final simulated point
+  const lastPoint = points[points.length - 1];
+  if (!lastPoint || lastPoint.x !== simBall.x || lastPoint.y !== simBall.y) {
+    points.push({ x: simBall.x, y: simBall.y });
+  }
+
+  // Draw white dashed trajectory prediction line
   ctx.beginPath();
   ctx.moveTo(points[0].x, points[0].y);
   for (let i = 1; i < points.length; i++) {
@@ -2008,17 +2036,45 @@ function drawAimLine() {
   ctx.stroke();
   ctx.setLineDash([]);
 
+  // Render collision markers along trajectory
+  let drawnBrickHitCircle = false;
   for (let pt of bouncePoints) {
-    ctx.fillStyle = pt.isBrick ? '#ff4757' : '#ffd166';
-    ctx.beginPath();
-    ctx.arc(pt.x, pt.y, pt.isBrick ? 5 : 3.5, 0, Math.PI * 2);
-    ctx.fill();
+    if (pt.isBrick) {
+      // Red circle for brick collision point
+      ctx.fillStyle = '#ff4757';
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Outer ring for clear visual alignment
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 8, 0, Math.PI * 2);
+      ctx.stroke();
+      drawnBrickHitCircle = true;
+    } else {
+      // Yellow circle for wall bounce point
+      ctx.fillStyle = '#ffd166';
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
-  ctx.fillStyle = '#ff4757';
-  ctx.beginPath();
-  ctx.arc(simBall.x, simBall.y, 5, 0, Math.PI * 2);
-  ctx.fill();
+  // If no brick collision point was drawn, draw target red circle at trajectory endpoint
+  if (!drawnBrickHitCircle) {
+    ctx.fillStyle = '#ff4757';
+    ctx.beginPath();
+    ctx.arc(simBall.x, simBall.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(simBall.x, simBall.y, 7, 0, Math.PI * 2);
+    ctx.stroke();
+  }
 
   ctx.restore();
 }
