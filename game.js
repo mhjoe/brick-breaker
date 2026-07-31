@@ -199,6 +199,8 @@ const state = {
     bonusBrickRate: 0
   },
   
+  lastUnbreakableWave: 0,
+  
   skillCharge: 0,
   maxSkillCharge: 200,
   barrierActive: false,
@@ -278,6 +280,7 @@ function initGame() {
   }
   state.startWave = selectedStart;
   state.wave = selectedStart;
+  state.lastUnbreakableWave = 0;
   
   state.seashells = 0;
   state.isAiming = false;
@@ -334,10 +337,11 @@ function spawnBrickRow() {
   const baseHp = Math.floor(1 + state.wave * 1.5);
   const bonusRate = 0.15 + (state.talents.bonusBrickRate || 0) * 0.08;
 
-  const isUnbreakableWave = (state.wave % 4 === 0);
+  const isUnbreakableWave = (state.wave % 4 === 0) && (state.lastUnbreakableWave !== state.wave);
   const centerCol = Math.floor((state.cols - 2) / 2);
 
   if (isUnbreakableWave) {
+    state.lastUnbreakableWave = state.wave;
     state.bricks.push({
       col: centerCol,
       row: 0,
@@ -345,7 +349,7 @@ function spawnBrickRow() {
       y: 10,
       targetY: 10,
       w: cellWidth * 2 - 3,
-      h: Math.floor((cellHeight - 3) / 2),
+      h: Math.floor((cellHeight - 3) * 0.45),
       r: BRICK_CORNER_RADIUS,
       hp: Infinity,
       maxHp: Infinity,
